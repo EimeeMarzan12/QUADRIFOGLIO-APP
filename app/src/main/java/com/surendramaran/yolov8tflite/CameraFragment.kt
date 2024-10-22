@@ -18,6 +18,8 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import com.surendramaran.yolov8tflite.Constants.LABELS_PATH
 import com.surendramaran.yolov8tflite.Constants.MODEL_PATH
+import com.surendramaran.yolov8tflite.Constants.LABELS2_PATH
+import com.surendramaran.yolov8tflite.Constants.MODEL2_PATH
 import com.surendramaran.yolov8tflite.databinding.FragmentCameraBinding
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -30,6 +32,7 @@ class CameraFragment : Fragment(), Detector.DetectorListener {
     private var _binding: FragmentCameraBinding? = null
     private val binding get() = _binding!!
     private val isFrontCamera = false
+    private lateinit var detector2: Detector
 
     private var preview: Preview? = null
     private var imageAnalyzer: ImageAnalysis? = null
@@ -37,6 +40,8 @@ class CameraFragment : Fragment(), Detector.DetectorListener {
     private var cameraProvider: ProcessCameraProvider? = null
     private lateinit var detector: Detector
     private lateinit var cameraExecutor: ExecutorService
+    private var boundingBoxesModel1: List<BoundingBox> = emptyList()
+    private var boundingBoxesModel2: List<BoundingBox> = emptyList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -56,6 +61,9 @@ class CameraFragment : Fragment(), Detector.DetectorListener {
 
         detector = Detector(requireContext(), MODEL_PATH, LABELS_PATH, this)
         detector.setup()
+
+        detector2 = Detector(requireContext(), MODEL2_PATH, LABELS2_PATH, this)
+        detector2.setup()
 
         if (allPermissionsGranted()) {
             startCamera()
@@ -105,7 +113,8 @@ class CameraFragment : Fragment(), Detector.DetectorListener {
             }
 
             val rotatedBitmap = Bitmap.createBitmap(bitmapBuffer, 0, 0, bitmapBuffer.width, bitmapBuffer.height, matrix, true)
-            detector.detect(rotatedBitmap)
+            detector.detect(rotatedBitmap, 1)
+            detector2.detect(rotatedBitmap, 2)  // Call for the second model
         }
 
         cameraProvider.unbindAll()
@@ -153,12 +162,25 @@ class CameraFragment : Fragment(), Detector.DetectorListener {
     }
 
     override fun onDetect(boundingBoxes: List<BoundingBox>, inferenceTime: Long) {
+        boundingBoxesModel1 = boundingBoxes // Store results for model 1
+
+
         requireActivity().runOnUiThread {
             binding.inferenceTime.text = "${inferenceTime}ms"
-            binding.overlay.apply {
-                setResults(boundingBoxes)
-                invalidate()
+            binding.overlay.setResults(boundingBoxesModel1, boundingBoxesModel2) // Pass both sets of results
+            binding.overlay.invalidate()
             }
+        }
+
+    override fun onDetect2(boundingBoxes: List<BoundingBox>, inferenceTime: Long) {
+        boundingBoxesModel2 = boundingBoxes // Store results for model 2
+
+        requireActivity().runOnUiThread {
+            binding.inferenceTime.text = "${inferenceTime}ms for Model 2"
+            binding.overlay.setResults(boundingBoxesModel1, boundingBoxesModel2) // Pass both sets of results
+            binding.overlay.invalidate()
         }
     }
 }
+
+

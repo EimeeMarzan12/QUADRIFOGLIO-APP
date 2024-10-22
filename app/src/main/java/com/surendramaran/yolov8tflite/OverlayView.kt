@@ -49,15 +49,22 @@ class OverlayView(context: Context?, attrs: AttributeSet?) : View(context, attrs
     override fun draw(canvas: Canvas) {
         super.draw(canvas)
 
-        results.forEach {
-            val left = it.x1 * width
-            val top = it.y1 * height
-            val right = it.x2 * width
-            val bottom = it.y2 * height
+        // Check the orientation of the canvas and set width and height accordingly
+        val canvasWidth = width
+        val canvasHeight = height
 
+        results.forEach {
+            // Adjust coordinates based on current orientation
+            val left = it.x1 * canvasWidth
+            val top = it.y1 * canvasHeight
+            val right = it.x2 * canvasWidth
+            val bottom = it.y2 * canvasHeight
+
+            // Draw bounding box
             canvas.drawRect(left, top, right, bottom, boxPaint)
             val drawableText = it.clsName
 
+            // Prepare text background
             textBackgroundPaint.getTextBounds(drawableText, 0, drawableText.length, bounds)
             val textWidth = bounds.width()
             val textHeight = bounds.height()
@@ -68,15 +75,17 @@ class OverlayView(context: Context?, attrs: AttributeSet?) : View(context, attrs
                 top + textHeight + BOUNDING_RECT_TEXT_PADDING,
                 textBackgroundPaint
             )
+            // Draw text on the bounding box
             canvas.drawText(drawableText, left, top + bounds.height(), textPaint)
-
         }
     }
 
-    fun setResults(boundingBoxes: List<BoundingBox>) {
-        results = boundingBoxes
+
+    fun setResults(boundingBoxesModel1: List<BoundingBox>, boundingBoxesModel2: List<BoundingBox>) {
+        results = boundingBoxesModel1 + boundingBoxesModel2 // Combine the results from both models
         invalidate()
     }
+
 
     companion object {
         private const val BOUNDING_RECT_TEXT_PADDING = 8

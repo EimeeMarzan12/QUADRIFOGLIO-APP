@@ -72,7 +72,8 @@ class Detector(
         interpreter = null
     }
 
-    fun detect(frame: Bitmap) {
+    fun detect(frame: Bitmap, modelIdentifier: Int) {
+
         interpreter ?: return
         if (tensorWidth == 0) return
         if (tensorHeight == 0) return
@@ -100,8 +101,12 @@ class Detector(
             detectorListener.onEmptyDetect()
             return
         }
-
-        detectorListener.onDetect(bestBoxes, inferenceTime)
+        // Determine which model's results to return
+        if (modelIdentifier == 1) {
+            detectorListener.onDetect(bestBoxes, inferenceTime) // For Model 1
+        } else {
+            detectorListener.onDetect2(bestBoxes, inferenceTime) // For Model 2
+        }
     }
 
     private fun bestBox(array: FloatArray) : List<BoundingBox>? {
@@ -188,6 +193,8 @@ class Detector(
     interface DetectorListener {
         fun onEmptyDetect()
         fun onDetect(boundingBoxes: List<BoundingBox>, inferenceTime: Long)
+        fun onDetect2(boundingBoxes: List<BoundingBox>, inferenceTime: Long)
+
     }
 
     companion object {
